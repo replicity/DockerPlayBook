@@ -1,0 +1,32 @@
+- name: update apt-get
+  apt: update_cache=yes
+
+- name: upgrade apt-get
+  apt: upgrade=dist
+
+- name: install packages
+  apt: name={{item}}
+  with_items:
+    - language-pack-ja
+    - vim-gnome
+    - zsh
+    - git
+    - tmux
+    - editorconfig
+
+- name: set zsh as default shell
+  user: name=vagrant shell=/usr/bin/zsh
+
+- name: get TZ
+  shell: timedatectl | awk 'NR == 1 {print $6}'
+  register: tz
+  changed_when: no
+  always_run: yes
+
+- name: Set timezone variables
+  copy:
+    content: 'Asia/Tokyo\n'
+    dest: /etc/timezone
+    backup: yes
+  when: tz.stdout == "UTC"
+  notify: update tzdata
