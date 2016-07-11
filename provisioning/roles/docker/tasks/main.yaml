@@ -1,0 +1,42 @@
+- name: add GPG Key
+  apt_key: keyserver=hkp://p80.pool.sks-keyservers.net:80 id=58118E89F3A912897C070ADBF76221572C52609D
+
+- name: docker.list file
+  template: src=docker.list dest=/etc/apt/sources.list.d owner=root group=root mode=644
+
+- name: get uname
+  shell: echo linux-image-extra-`uname -r`
+  register: lix
+  changed_when: no
+  always_run: yes
+
+- name: install dependent packages of docker
+  apt: name={{item}}
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - "{{ lix.stdout }}"
+    - apparmor
+
+- name: update apt-get
+  apt: update_cache=yes
+
+- name: upgrade apt-get
+  apt: upgrade=dist
+
+- name: install docker package
+  apt: name={{item}}
+  with_items:
+    - docker-engine
+
+- name: add usergroup
+  user: name=vagrant groups=docker append=yes
+
+- name: djust memory and swap acconting
+  lineinfile:
+    dest: /etc/default/grub
+    backrefs: yes
+    regexp: '^GRUB_CMDLINE_LINUX=\"\"'
+    line: "GRUB_CMDLINE_LINUX=\"cgroup_enable=memory swapaccount=1\""
+    state: present
+  notify: update-grub

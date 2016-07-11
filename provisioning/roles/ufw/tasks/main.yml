@@ -1,0 +1,33 @@
+# - name: ufw allow ssh
+#   ufw : rule=allow port=22 proto=tcp
+#
+# - name: ufw allow http
+#   ufw : rule=allow port=80 proto=tcp
+#
+# - name: ufw allow docker
+#   ufw : rule=allow port=2375 proto=tcp
+
+- name: ufw allow ssh
+  ufw : rule=allow port={{item}} proto=tcp
+  with_items:
+    - 22
+    - 80
+    - 2375
+
+- name: update ufw to allow forwarding
+  lineinfile:
+    dest : /etc/default/ufw
+    regexp : 'DEFAULT_FORWARD_POLICY='
+    line : 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+
+- name: Set ufw IPv6
+  lineinfile:
+    dest: /etc/default/ufw
+    regexp: '^IPV6='
+    line: "IPV6=no"
+    state: present
+  notify:
+    - reload ufw
+
+- name: ufw default policy
+  ufw : state=enabled policy=reject
